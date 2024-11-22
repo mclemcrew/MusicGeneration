@@ -51,7 +51,7 @@ You will also need to add for the keyboard itself:
 1. Open System Preferences
 2. Go to Keyboard
 3. Find Keyboard Navigation and make sure it's checked
-   ![Keyboard Navigation](/imgs/keyboard-navigation.png)
+   ![Keyboard Navigation](/imgs/keyboard-nav.png)
 
 ## Project Setup
 
