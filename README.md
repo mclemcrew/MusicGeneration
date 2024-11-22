@@ -45,7 +45,6 @@ You can also find the download on the [Audacity website](https://www.audacitytea
 4. Select Accessibility from the left sidebar
 5. Click the lock icon to make changes
 6. Ensure Audacity and Terminal are checked
-7. Also enable "Control your computer with accessibility features"
 
 You will also need to add for the keyboard itself:
 
