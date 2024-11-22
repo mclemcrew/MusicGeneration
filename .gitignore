@@ -2,3 +2,8 @@
 *.wav
 .DS_Store
 *.asd
+*.mid
+*.npz
+*.csv
+*_labels*
+*.jams
