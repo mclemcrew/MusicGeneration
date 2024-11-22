@@ -18,13 +18,43 @@ console = Console()
 def get_processing_status(audio_file):
     """Check if file has been processed (has labels and description)"""
     base_name = Path(audio_file).stem
-    labels_file = Path('./labels') / f"{base_name}_labels.txt"
+    
+    # Handle both .mp3 and .wav extensions in labels filename
+    labels_file = Path('./labels') / f"{audio_file}_labels.txt"  # Using full audio_file name
     desc_file = Path('./descriptions') / f"{base_name}_description.txt"
     
-    has_labels = labels_file.exists()
-    has_desc = desc_file.exists() and desc_file.stat().st_size > 0
+    has_labels = False
+    has_desc = False
+    is_processed = False
     
-    if has_labels and has_desc:
+    # Check labels file
+    if labels_file.exists() and labels_file.stat().st_size > 0:
+        # Check if file has valid content (at least one line with timestamps)
+        try:
+            with open(labels_file) as f:
+                content = f.read().strip()
+                has_labels = bool(content and '\t' in content)  # Check for tab-separated content
+        except Exception:
+            has_labels = False
+    
+    # Check description file and its processed status
+    if desc_file.exists() and desc_file.stat().st_size > 0:
+        try:
+            with open(desc_file) as f:
+                content = f.read()
+                # Check if description and genre tags are not empty
+                has_description = 'description:\n' in content and len(content.split('description:\n')[1].split('genre-tags:')[0].strip()) > 0
+                has_tags = 'genre-tags:\n' in content and len(content.split('genre-tags:\n')[1].split('processed:')[0].strip()) > 0
+                # Check processed status
+                is_processed = 'processed: true' in content
+                
+                has_desc = has_description and has_tags
+        except Exception:
+            has_desc = False
+            is_processed = False
+    
+    # Determine status
+    if has_labels and has_desc and is_processed:
         return "[green]DONE[/green]"
     elif has_labels or has_desc:
         return "[yellow]PARTIAL[/yellow]"
