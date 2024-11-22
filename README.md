@@ -51,7 +51,7 @@ You will also need to add for the keyboard itself:
 1. Open System Preferences
 2. Go to Keyboard
 3. Find Keyboard Navigation and make sure it's checked
-   ![Keyboard Navigation](keyboard-navigation.png)
+   ![Keyboard Navigation](/imgs/keyboard-navigation.png)
 
 ## Project Setup
 
@@ -85,7 +85,7 @@ You will probably need to restart your window after installing the environments 
 ### 2. Run Music Segmentation
 
 1. Navigate to and open `notebooks/music-segmentation.ipynb`
-2. Make sure to select the `segmenter` environment in the top right corner of the notebook ![Picture of Segmenter Environment selected in the Jupyter Notebook](segmenter.png)
+2. Make sure to select the `segmenter` environment in the top right corner of the notebook ![Picture of Segmenter Environment selected in the Jupyter Notebook](/imgs/segmenter.png)
 3. Run all cells in the notebook
 
 The segmentation process will:
