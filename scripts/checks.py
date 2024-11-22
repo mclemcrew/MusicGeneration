@@ -178,7 +178,7 @@ def get_user_input(prompt_text):
     """Get user input with rich formatting"""
     return Prompt.ask(prompt_text)
 
-def create_apple_script(audio_path, labels_path):
+def create_apple_script(labels_path):
     """
     Creates an AppleScript to automate Audacity label import with corrected menu hierarchy
     """
@@ -232,7 +232,7 @@ def open_in_audacity(audio_file):
             time.sleep(2)  # Give Audacity time to open
             
             # Create and execute AppleScript for labels import
-            apple_script = create_apple_script(audio_path, labels_path)
+            apple_script = create_apple_script(labels_path)
             with open('/tmp/audacity_script.scpt', 'w') as f:
                 f.write(apple_script)
             
@@ -317,16 +317,20 @@ def edit_description(audio_file):
     return True
 
 def create_export_apple_script(labels_path):
-    """Creates AppleScript to export labels from Audacity"""
+    """Creates AppleScript to export labels from Audacity, with Select All before export"""
     return f'''
     tell application "Audacity"
         activate
     end tell
 
     delay 1
-
+    
     tell application "System Events"
         tell process "Audacity"
+            -- Select All content first
+            keystroke "a" using {{command down}}
+            delay 0.5  -- Ensure selection completes
+            
             click menu bar item "File" of menu bar 1
             delay 0.5
 
@@ -376,7 +380,7 @@ def create_export_apple_script(labels_path):
         end tell
     end tell
     '''
-
+    
 def export_labels(labels_path):
     """Exports labels from Audacity back to file"""
     try:

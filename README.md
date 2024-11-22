@@ -37,14 +37,20 @@ brew install --cask audacity
 
 You can also find the download on the [Audacity website](https://www.audacityteam.org/download/).
 
-### 4. Enable Keyboard Accessibility (Required for macOS)
+### 4. Install VSCode
+
+1. Install via Homebrew:
+
+You can find the download for this program on the [VSCode Website](https://code.visualstudio.com/download)
+
+### 5. Enable Keyboard Accessibility (Required for macOS)
 
 1. Open System Preferences
 2. Go to Security & Privacy
 3. Select Privacy tab
 4. Select Accessibility from the left sidebar
 5. Click the lock icon to make changes
-6. Ensure Audacity and Terminal are checked
+6. Ensure Audacity, Terminal, and VSCode are checked
 
 You will also need to add for the keyboard itself:
 
