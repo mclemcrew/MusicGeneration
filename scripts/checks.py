@@ -612,7 +612,7 @@ def process_audio_file(audio_file, audio_dir, action):
 
 def main():
     audio_dir = Path('./audio')
-    audio_files = [f for f in os.listdir(audio_dir) if f.endswith(('.mp3', '.wav'))]
+    audio_files = sorted([f for f in os.listdir(audio_dir) if f.endswith(('.mp3', '.wav'))])
     
     if not audio_files:
         console.print(Panel("[red]No audio files found in ./audio directory[/red]", 
