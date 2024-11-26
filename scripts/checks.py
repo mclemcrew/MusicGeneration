@@ -15,6 +15,13 @@ from mutagen.wave import WAVE
 
 console = Console()
 
+try:
+    import pyautogui
+    import pygetwindow as gw
+    WINDOWS_AUTOMATION_AVAILABLE = True
+except ImportError:
+    WINDOWS_AUTOMATION_AVAILABLE = False
+
 def get_processing_status(audio_file):
     """Check if file has been processed (has labels and description)"""
     base_name = Path(audio_file).stem
@@ -243,56 +250,199 @@ def create_apple_script(labels_path):
     end tell
     '''
 
+class AudacityAutomation:
+    def __init__(self):
+        self.audacity_window = None
+        
+    def find_audacity_window(self, timeout=10):
+        """Find and activate the Audacity window"""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                windows = gw.getWindowsWithTitle('Audacity')
+                if windows:
+                    self.audacity_window = windows[0]
+                    self.audacity_window.activate()
+                    self.audacity_window.maximize()
+                    time.sleep(1)
+                    return True
+            except Exception as e:
+                console.print(f"[yellow]Warning: Error finding Audacity window: {e}[/yellow]")
+            time.sleep(1)
+        return False
+
+    def test_automation(self):
+        """Test if automation can work on the current system"""
+        try:
+            subprocess.Popen(['start', 'Audacity.exe'], shell=True)
+            time.sleep(2)
+            
+            if not self.find_audacity_window():
+                return False, "Could not find Audacity window"
+                
+            pyautogui.hotkey('alt')
+            time.sleep(0.5)
+            pyautogui.press('f')
+            time.sleep(0.5)
+            
+            pyautogui.hotkey('alt', 'f4')
+            time.sleep(0.5)
+            pyautogui.press('n')
+            
+            return True, "Automation test successful"
+        except Exception as e:
+            return False, f"Automation test failed: {str(e)}"
+
+    def import_labels(self, labels_path, retries=3):
+        """Import labels with retry mechanism"""
+        for attempt in range(retries):
+            try:
+                if not self.find_audacity_window():
+                    raise Exception("Could not find Audacity window")
+                
+                pyautogui.hotkey('ctrl', 'a')
+                time.sleep(0.5)
+                
+                pyautogui.hotkey('alt')
+                time.sleep(0.5)
+                pyautogui.press('f')
+                time.sleep(0.5)
+                pyautogui.press('i')
+                time.sleep(0.5)
+                pyautogui.press('l')
+                time.sleep(1)
+                
+                pyautogui.write(str(labels_path))
+                time.sleep(0.5)
+                pyautogui.press('enter')
+                return True
+                
+            except Exception as e:
+                console.print(f"[yellow]Import attempt {attempt + 1} failed: {e}[/yellow]")
+                if attempt == retries - 1:
+                    return False
+                time.sleep(1)
+
+    def export_labels(self, labels_path, retries=3):
+        """Export labels with retry mechanism"""
+        for attempt in range(retries):
+            try:
+                if not self.find_audacity_window():
+                    raise Exception("Could not find Audacity window")
+                
+                pyautogui.hotkey('ctrl', 'a')
+                time.sleep(0.5)
+                
+                pyautogui.hotkey('alt')
+                time.sleep(0.5)
+                pyautogui.press('f')
+                time.sleep(0.5)
+                pyautogui.press('e')
+                time.sleep(0.5)
+                pyautogui.press('o')
+                time.sleep(0.5)
+                pyautogui.press('l')
+                time.sleep(1)
+                
+                pyautogui.write(str(labels_path))
+                time.sleep(0.5)
+                pyautogui.press('enter')
+                time.sleep(1)
+                
+                pyautogui.press('tab')
+                time.sleep(0.5)
+                pyautogui.press('enter')
+                time.sleep(1)
+                
+                self.close_audacity()
+                return True
+                
+            except Exception as e:
+                console.print(f"[yellow]Export attempt {attempt + 1} failed: {e}[/yellow]")
+                if attempt == retries - 1:
+                    return False
+                time.sleep(1)
+    
+    def close_audacity(self):
+        """Safely close Audacity"""
+        try:
+            if self.audacity_window:
+                self.audacity_window.activate()
+                time.sleep(0.5)
+                pyautogui.hotkey('alt', 'f4')
+                time.sleep(0.5)
+                pyautogui.press('n')
+        except Exception as e:
+            console.print(f"[yellow]Error closing Audacity: {e}[/yellow]")
+
 def open_in_audacity(audio_file):
-    """
-    Opens an audio file and its corresponding labels file in Audacity
-    """
-    # Get the full paths
+    """Opens an audio file and its corresponding labels file in Audacity"""
     audio_path = os.path.abspath(audio_file)
     labels_path = os.path.abspath(f"./labels/{os.path.basename(audio_file)}_labels.txt")
     
     if not os.path.exists(labels_path):
-        print(f"Labels file not found: {labels_path}")
+        console.print(f"[red]Labels file not found: {labels_path}[/red]")
         return False
         
     try:
         if sys.platform == 'darwin':  # macOS
-            # First, open the audio file
+            # Your existing macOS code here
             subprocess.Popen(['open', '-a', 'Audacity', audio_path])
-            time.sleep(2)  # Give Audacity time to open
+            time.sleep(2)
             
-            # Create and execute AppleScript for labels import
             apple_script = create_apple_script(labels_path)
             with open('/tmp/audacity_script.scpt', 'w') as f:
                 f.write(apple_script)
             
             subprocess.run(['osascript', '/tmp/audacity_script.scpt'])
-            os.remove('/tmp/audacity_script.scpt')  # Clean up
+            os.remove('/tmp/audacity_script.scpt')
             
         elif sys.platform == 'win32':  # Windows
-            subprocess.Popen(['start', 'Audacity.exe', audio_path], shell=True)
-            print("\nAutomatic label import not supported on Windows.")
-            print(f"Please manually import labels from: {labels_path}")
-            
+            if WINDOWS_AUTOMATION_AVAILABLE:
+                automation = AudacityAutomation()
+                
+                # Run test if it's the first time
+                if not hasattr(open_in_audacity, 'tested'):
+                    console.print("[yellow]Testing Windows automation...[/yellow]")
+                    success, message = automation.test_automation()
+                    open_in_audacity.tested = True
+                    if not success:
+                        console.print(f"[red]Automation test failed: {message}[/red]")
+                        console.print("[yellow]Falling back to manual mode...[/yellow]")
+                        subprocess.Popen(['start', 'Audacity.exe', audio_path], shell=True)
+                        console.print(f"[yellow]Please manually import labels from: {labels_path}[/yellow]")
+                        return True
+                
+                subprocess.Popen(['start', 'Audacity.exe', audio_path], shell=True)
+                time.sleep(2)
+                
+                if automation.import_labels(labels_path):
+                    console.print("[green]Labels imported successfully[/green]")
+                    return True
+                else:
+                    console.print("[red]Automation failed. Please import labels manually:[/red]")
+                    console.print(f"[yellow]Labels file location: {labels_path}[/yellow]")
+                    return False
+            else:
+                console.print("[yellow]Windows automation not available. Install required packages:[/yellow]")
+                console.print("[yellow]pip install pyautogui pygetwindow[/yellow]")
+                subprocess.Popen(['start', 'Audacity.exe', audio_path], shell=True)
+                console.print(f"[yellow]Please manually import labels from: {labels_path}[/yellow]")
+                return True
+                
         else:  # Linux
+            # Your existing Linux code here
             subprocess.Popen(['audacity', audio_path])
-            print("\nAutomatic label import not supported on Linux.")
-            print(f"Please manually import labels from: {labels_path}")
+            console.print("\n[yellow]Automatic label import not supported on Linux.[/yellow]")
+            console.print(f"[yellow]Please manually import labels from: {labels_path}[/yellow]")
         
-        print(f"\nAudio file opened in Audacity: {audio_path}")
-        print(f"Labels file location: {labels_path}")
-        
-        if sys.platform != 'darwin':
-            print("\nTo import labels manually in Audacity:")
-            print("1. File > Import > Labels...")
-            print(f"2. Navigate to: {labels_path}")
-        
+        console.print(f"\n[green]Audio file opened in Audacity: {audio_path}[/green]")
         return True
         
     except Exception as e:
-        print(f"Error: {str(e)}")
+        console.print(f"[red]Error: {str(e)}[/red]")
         return False
-    
+
 def create_description_file(audio_file):
     """Creates or updates a description file for an audio file"""
     desc_dir = Path('./descriptions')
@@ -415,6 +565,7 @@ def export_labels(labels_path):
     """Exports labels from Audacity back to file"""
     try:
         if sys.platform == 'darwin':
+            # Your existing macOS code here
             apple_script = create_export_apple_script(labels_path)
             with open('/tmp/audacity_export_script.scpt', 'w') as f:
                 f.write(apple_script)
@@ -422,6 +573,13 @@ def export_labels(labels_path):
             subprocess.run(['osascript', '/tmp/audacity_export_script.scpt'])
             os.remove('/tmp/audacity_export_script.scpt')
             return True
+        elif sys.platform == 'win32' and WINDOWS_AUTOMATION_AVAILABLE:
+            automation = AudacityAutomation()
+            return automation.export_labels(labels_path)
+        else:
+            console.print("[yellow]Please export labels manually and save to:[/yellow]")
+            console.print(f"[yellow]{labels_path}[/yellow]")
+            return False
     except Exception as e:
         console.print(f"[red]Error exporting labels: {str(e)}[/red]")
         return False
